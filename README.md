@@ -2,6 +2,8 @@
 
 RAG Guard Copilot is a demo-ready portfolio project that shows identity-aware RAG security for enterprise AI assistants. It simulates user-level access control, blocks unsafe retrieval, detects prompt injection in retrieved documents, masks sensitive data before prompt construction, and logs every query in a simple audit trail.
 
+The real product in this repo is the policy-aware RAG security pipeline under `src/rag_guard_copilot/`. Streamlit is a thin demo UI over that backend so reviewers can inspect the same engine visually.
+
 ## Why this project is strong for JD alignment
 
 This repo is intentionally shaped for security, AI platform, and applied ML roles that ask for:
@@ -23,6 +25,7 @@ The demo emphasizes practical guardrails over model novelty. It shows how an ass
 - Masks emails, phone numbers, SSNs, salaries, and street addresses
 - Writes an audit log with user, query, allowed docs, blocked docs, flagged injections, masked PII count, token estimate, and latency
 - Provides a Streamlit dashboard with `Query Assistant`, `Access Audit`, `Security Events`, and `Evaluation` tabs
+- Exposes a backend-first security pipeline and CLI for non-UI testing and scenario execution
 
 ## Project structure
 
@@ -43,9 +46,13 @@ rag-guard-copilot/
         |-- __init__.py
         |-- assistant.py
         |-- audit.py
+        |-- cli.py
         |-- config.py
         |-- data_loader.py
+        |-- pipeline.py
+        |-- policy_engine.py
         |-- retrieval.py
+        |-- schemas.py
         `-- security.py
 ```
 
@@ -61,8 +68,10 @@ python -m venv .venv
 2. Install dependencies:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m pip install -e .
 ```
+
+Dependency ownership lives in `pyproject.toml`. The `requirements.txt` file is kept as a thin deployment shim for environments like Streamlit that expect it.
 
 3. Start the app:
 
@@ -72,14 +81,27 @@ python -m streamlit run app.py
 
 4. Open the local Streamlit URL shown in the terminal.
 
+## Backend-first usage
+
+Run the security engine directly without Streamlit:
+
+```powershell
+python -m rag_guard_copilot.cli --user finance_analyst --query "show finance vendor risk"
+```
+
+The CLI prints allowed documents, blocked documents, injection flags, masked PII count, and the audit event path for the run.
+
+If you prefer a pinned dependency snapshot for non-editable environments, `requirements.txt` is still included.
+
 ## Demo notes
 
 - No paid API is required.
 - Optional LLM calling is intentionally disabled by default.
 - Retrieval is local and lightweight for easy demo portability.
 - Audit logs are written to `logs/audit_log.csv` after queries run.
+- Streamlit is demo UI only; the core logic lives in the backend pipeline modules.
 
-## Current v1 behavior
+## Current behavior
 
 ### Works now
 
@@ -89,6 +111,7 @@ python -m streamlit run app.py
 - PII masking before response context is assembled
 - audit logging and security event surfacing
 - basic evaluation scenarios in the UI
+- CLI execution of the same security engine without Streamlit
 
 ### Mocked
 
@@ -96,6 +119,13 @@ python -m streamlit run app.py
 - production document store and chunking pipeline
 - real LLM response generation
 - enterprise auth, policy engines, and SIEM export
+
+## How this maps to AI Operations & RAG Architect work
+
+- Shows how retrieval systems can enforce identity-aware access policy before context reaches a model.
+- Demonstrates practical defense-in-depth for enterprise assistants through access control, prompt-injection screening, PII redaction, and auditability.
+- Mirrors AI operations concerns such as observability, safety checks, deterministic evaluations, and local-first demo environments that are easy to validate.
+- Provides a portfolio-friendly example of secure RAG orchestration without hiding behind paid APIs or overbuilt infrastructure.
 
 ## Next improvements
 

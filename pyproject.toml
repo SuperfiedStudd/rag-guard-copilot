@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-guard-copilot"
+version = "0.2.0"
+description = "Backend-first demo platform for policy-aware RAG security."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "streamlit>=1.45,<2",
+  "pandas>=2.2,<3",
+  "scikit-learn>=1.4,<2",
+  "numpy>=1.26,<3",
+  "pytest>=8.2,<9",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

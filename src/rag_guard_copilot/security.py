@@ -1,18 +1,6 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-
-import pandas as pd
-
-
-GROUP_ACCESS = {
-    "public": {"public"},
-    "internal": {"internal", "finance", "hr", "legal"},
-    "finance": {"finance"},
-    "hr": {"hr"},
-    "legal": {"legal"},
-}
 
 INJECTION_PATTERNS = [
     r"ignore (all )?(previous|prior) instructions",
@@ -35,39 +23,8 @@ PII_PATTERNS = {
         re.IGNORECASE,
     ),
 }
-
-
-@dataclass
-class AccessDecision:
-    allowed: bool
-    reason: str
-
-
 def parse_allowed_groups(raw_value: str) -> set[str]:
     return {item.strip().lower() for item in raw_value.split("|") if item.strip()}
-
-
-def get_user_record(users_df: pd.DataFrame, user_id: str) -> dict:
-    user = users_df.loc[users_df["user_id"] == user_id]
-    if user.empty:
-        raise ValueError(f"Unknown user_id: {user_id}")
-    record = user.iloc[0].to_dict()
-    record["allowed_groups"] = parse_allowed_groups(str(record["allowed_groups"]))
-    return record
-
-
-def check_document_access(user: dict, document_group: str) -> AccessDecision:
-    normalized_group = document_group.strip().lower()
-    if normalized_group == "public":
-        return AccessDecision(True, "Public document is available to all users.")
-
-    if normalized_group in user["allowed_groups"]:
-        return AccessDecision(True, f"User has explicit access to the '{normalized_group}' document group.")
-
-    if normalized_group == "internal" and user["role"].lower() in {"manager", "director", "counsel"}:
-        return AccessDecision(True, f"Role '{user['role']}' is allowed to view internal documents.")
-
-    return AccessDecision(False, f"User is not permitted to access the '{normalized_group}' document group.")
 
 
 def detect_prompt_injection(text: str) -> list[str]:

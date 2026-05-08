@@ -11,9 +11,9 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from rag_guard_copilot.assistant import run_secure_query
 from rag_guard_copilot.audit import load_audit_log
 from rag_guard_copilot.data_loader import load_documents, load_users
+from rag_guard_copilot.pipeline import run_secure_pipeline
 
 
 st.set_page_config(page_title="RAG Guard Copilot", page_icon="🛡️", layout="wide")
@@ -30,6 +30,7 @@ def get_documents() -> pd.DataFrame:
 
 
 def render_query_tab(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> None:
+    del documents_df
     st.subheader("Identity-aware assistant")
     user_options = users_df.apply(
         lambda row: f"{row['user_id']} | {row['name']} | {row['department']} | {row['role']}",
@@ -45,7 +46,7 @@ def render_query_tab(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> None
 
     if st.button("Run secure retrieval", type="primary", use_container_width=True):
         with st.spinner("Checking access, screening prompt injection, and masking PII..."):
-            result = run_secure_query(query, selected_user_id, users_df, documents_df)
+            result = run_secure_pipeline(query, selected_user_id)
         st.session_state["last_result"] = result
 
     result = st.session_state.get("last_result")
@@ -56,24 +57,55 @@ def render_query_tab(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> None
     left, right = st.columns([1.5, 1])
     with left:
         st.markdown("### Assistant output")
-        st.code(result["answer"], language="markdown")
+        st.code(result.answer, language="markdown")
 
         st.markdown("### Allowed context")
-        if result["allowed_docs"]:
-            st.dataframe(pd.DataFrame(result["allowed_docs"]), use_container_width=True, hide_index=True)
+        if result.allowed_docs:
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "doc_id": doc.doc_id,
+                            "title": doc.title,
+                            "group": doc.group,
+                            "reason": doc.access_reason,
+                            "score": round(doc.score, 3),
+                        }
+                        for doc in result.allowed_docs
+                    ]
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
         else:
             st.warning("No documents cleared policy checks for this query.")
 
     with right:
         st.markdown("### Run summary")
-        st.metric("Masked PII", result["masked_pii_count"])
-        st.metric("Token estimate", result["token_estimate"])
-        st.metric("Latency (ms)", result["latency_ms"])
-        st.metric("Optional LLM enabled", "No" if not result["llm_enabled"] else "Yes")
+        st.metric("Masked PII", result.masked_pii_count)
+        st.metric("Token estimate", result.token_estimate)
+        st.metric("Latency (ms)", result.latency_ms)
+        st.metric("Optional LLM enabled", "No" if not result.llm_enabled else "Yes")
+        st.caption(f"Audit event: {result.audit_path}")
 
         st.markdown("### Blocked context")
-        if result["blocked_docs"]:
-            st.dataframe(pd.DataFrame(result["blocked_docs"]), use_container_width=True, hide_index=True)
+        if result.blocked_docs:
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "doc_id": doc.doc_id,
+                            "title": doc.title,
+                            "group": doc.group,
+                            "reason": doc.access_reason,
+                            "score": round(doc.score, 3),
+                        }
+                        for doc in result.blocked_docs
+                    ]
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
         else:
             st.success("No documents were blocked in this retrieval set.")
 
@@ -90,7 +122,7 @@ def render_query_tab(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> None
                 "access_reason": item.access_reason,
                 "injection_flags": ", ".join(item.injection_flags) if item.injection_flags else "",
             }
-            for item in result["retrieval_results"]
+            for item in result.retrieval_decisions
         ]
     )
     st.dataframe(table, use_container_width=True, hide_index=True)
@@ -111,19 +143,20 @@ def render_events_tab() -> None:
     if not result:
         st.info("Run a query to populate access blocks, injection flags, and PII masking events.")
         return
-    events = result["security_events"]
+    events = result.security_events
     if not events:
         st.success("No security events were raised for the most recent query.")
         return
-    st.dataframe(pd.DataFrame(events), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame([event.__dict__ for event in events]), use_container_width=True, hide_index=True)
 
 
 def render_eval_tab(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> None:
+    del users_df, documents_df
     st.subheader("Evaluation scenarios")
     scenarios = [
         {
             "scenario": "Finance analyst can retrieve finance content",
-            "user_id": "u_fin_01",
+            "user_id": "finance_analyst",
             "query": "What happened in the Q3 finance plan?",
             "expected": "finance_allowed",
         },
@@ -143,10 +176,10 @@ def render_eval_tab(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> None:
 
     rows = []
     for scenario in scenarios:
-        result = run_secure_query(scenario["query"], scenario["user_id"], users_df, documents_df)
-        finance_allowed = any(doc["group"] == "finance" for doc in result["allowed_docs"])
-        legal_blocked = any(doc["group"] == "legal" for doc in result["blocked_docs"])
-        injection_flagged = any(event["type"] == "prompt_injection_flag" for event in result["security_events"])
+        result = run_secure_pipeline(scenario["query"], scenario["user_id"])
+        finance_allowed = any(doc.group == "finance" for doc in result.allowed_docs)
+        legal_blocked = any(doc.group == "legal" for doc in result.blocked_docs)
+        injection_flagged = any(event.type == "prompt_injection_flag" for event in result.security_events)
 
         passed = {
             "finance_allowed": finance_allowed,
@@ -160,9 +193,9 @@ def render_eval_tab(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> None:
                 "user_id": scenario["user_id"],
                 "query": scenario["query"],
                 "passed": passed,
-                "allowed_docs": len(result["allowed_docs"]),
-                "blocked_docs": len(result["blocked_docs"]),
-                "security_events": len(result["security_events"]),
+                "allowed_docs": len(result.allowed_docs),
+                "blocked_docs": len(result.blocked_docs),
+                "security_events": len(result.security_events),
             }
         )
 
@@ -180,6 +213,7 @@ def main() -> None:
 
     with st.sidebar:
         st.markdown("### Demo scope")
+        st.write("Streamlit is a thin demo surface over the backend policy-aware RAG security pipeline.")
         st.write("Access control is mocked with local sample users and document groups.")
         st.write("Retrieval uses local TF-IDF search with no paid API dependency.")
         st.write("Optional model calls are disabled by default.")

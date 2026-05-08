@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from .config import LOG_DIR
+from .schemas import AuditEvent
 
 
 AUDIT_COLUMNS = [
@@ -30,23 +31,23 @@ def ensure_log_dir() -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def append_audit_event(event: dict) -> Path:
+def append_audit_event(event: AuditEvent) -> Path:
     ensure_log_dir()
     audit_path = LOG_DIR / "audit_log.csv"
     row = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "user_id": event["user"]["user_id"],
-        "department": event["user"]["department"],
-        "role": event["user"]["role"],
-        "query": event["query"],
-        "allowed_docs": json.dumps(event["allowed_docs"]),
-        "blocked_docs": json.dumps(event["blocked_docs"]),
-        "blocked_reasons": json.dumps(event["blocked_reasons"]),
-        "injection_doc_ids": json.dumps(event["injection_doc_ids"]),
-        "masked_pii_count": event["masked_pii_count"],
-        "token_estimate": event["token_estimate"],
-        "latency_ms": event["latency_ms"],
-        "llm_enabled": event["llm_enabled"],
+        "user_id": event.user.user_id,
+        "department": event.user.department,
+        "role": event.user.role,
+        "query": event.query,
+        "allowed_docs": json.dumps(event.allowed_docs),
+        "blocked_docs": json.dumps(event.blocked_docs),
+        "blocked_reasons": json.dumps(event.blocked_reasons),
+        "injection_doc_ids": json.dumps(event.injection_doc_ids),
+        "masked_pii_count": event.masked_pii_count,
+        "token_estimate": event.token_estimate,
+        "latency_ms": event.latency_ms,
+        "llm_enabled": event.llm_enabled,
     }
     frame = pd.DataFrame([row], columns=AUDIT_COLUMNS)
     if audit_path.exists():

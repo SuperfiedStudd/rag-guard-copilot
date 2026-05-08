@@ -1,0 +1,8 @@
+.venv/
+.pytest_cache/
+logs/
+__pycache__/
+src/rag_guard_copilot/__pycache__/
+tests/__pycache__/
+rag_guard_copilot/__pycache__/
+src/*.egg-info/
