@@ -1,49 +1,50 @@
 # RAG Guard Copilot
 
-RAG Guard Copilot is a demo-ready portfolio project that shows identity-aware RAG security for enterprise AI assistants. It simulates user-level access control, blocks unsafe retrieval, detects prompt injection in retrieved documents, masks sensitive data before prompt construction, and logs every query in a simple audit trail.
+RAG Guard Copilot proves a specific engineering point: a retrieval system can enforce identity-aware access control, filter prompt-injection content, mask sensitive data, and emit audit evidence before any LLM answer is assembled.
 
-The real product in this repo is the policy-aware RAG security pipeline under `src/rag_guard_copilot/`. Streamlit is a thin demo UI over that backend so reviewers can inspect the same engine visually.
+This repo is backend-first. The core deliverable is a testable secure RAG pipeline under `src/rag_guard_copilot/`. Streamlit is included as a thin demo surface for inspection, not as the product itself.
 
-## Why this project is strong for JD alignment
+## What this project proves
 
-This repo is intentionally shaped for security, AI platform, and applied ML roles that ask for:
+- retrieval can be policy-aware instead of blindly relevance-first
+- unsafe retrieved context can be blocked before answer construction
+- prompt-injection defense belongs in the retrieval pipeline, not only at the model boundary
+- PII masking and audit logging can be first-class pipeline steps
+- the same security engine can be exercised through tests, CLI, and UI
 
-- secure AI application design
-- RAG and retrieval controls
-- prompt injection awareness
-- privacy and data protection practices
-- developer-facing demos with clear observability
+## Core capabilities
 
-The demo emphasizes practical guardrails over model novelty. It shows how an assistant can remain helpful while respecting access policy and reducing common enterprise AI risks.
-
-## What the app does
-
-- Simulates Google/Okta-style identity metadata with mock users, departments, roles, and allowed document groups
+- Simulates identity metadata with mock users, departments, roles, and allowed document groups
 - Retrieves candidate documents with local TF-IDF search
-- Applies per-document access checks before context assembly
-- Detects prompt-injection phrases in retrieved content and blocks those documents from prompt context
-- Masks emails, phone numbers, SSNs, salaries, and street addresses
-- Writes an audit log with user, query, allowed docs, blocked docs, flagged injections, masked PII count, token estimate, and latency
-- Provides a Streamlit dashboard with `Query Assistant`, `Access Audit`, `Security Events`, and `Evaluation` tabs
-- Exposes a backend-first security pipeline and CLI for non-UI testing and scenario execution
+- Applies per-document access decisions before prompt context is built
+- Detects prompt-injection phrases in retrieved content and blocks flagged documents
+- Masks emails, phone numbers, SSNs, salaries, and street addresses before answer assembly
+- Writes audit records with user, query, allowed docs, blocked docs, injection flags, masked PII count, token estimate, and latency
+- Exposes the pipeline through both a CLI and a Streamlit review UI
 
-## Project structure
+## Why this is not just a dashboard
+
+- The main logic lives in typed backend modules, not in the UI layer.
+- The secure flow is executable without Streamlit through `python -m rag_guard_copilot.cli`.
+- Tests validate the backend pipeline directly, including blocked retrieval, injection detection, PII masking, and audit writes.
+- Streamlit is only a reviewer-friendly lens over the same pipeline used by the CLI and tests.
+
+## Architecture
 
 ```text
 rag-guard-copilot/
 |-- app.py
+|-- pyproject.toml
 |-- requirements.txt
 |-- README.md
-|-- AGENTS.md
-|-- PROJECT_CONTEXT.md
-|-- RULES.md
-|-- TASK_LOG.md
+|-- demo_scenarios.md
+|-- docs/
+|   `-- threat_model.md
 |-- sample_data/
 |   |-- documents.csv
 |   `-- users.csv
 `-- src/
     `-- rag_guard_copilot/
-        |-- __init__.py
         |-- assistant.py
         |-- audit.py
         |-- cli.py
@@ -65,72 +66,71 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-2. Install dependencies:
+2. Install the project:
 
 ```powershell
 python -m pip install -e .
 ```
 
-Dependency ownership lives in `pyproject.toml`. The `requirements.txt` file is kept as a thin deployment shim for environments like Streamlit that expect it.
+Dependency ownership lives in `pyproject.toml`. The `requirements.txt` file is intentionally minimal and kept as a deployment shim for platforms that expect it.
 
-3. Start the app:
-
-```powershell
-python -m streamlit run app.py
-```
-
-4. Open the local Streamlit URL shown in the terminal.
-
-## Backend-first usage
-
-Run the security engine directly without Streamlit:
+3. Run the backend pipeline directly:
 
 ```powershell
 python -m rag_guard_copilot.cli --user finance_analyst --query "show finance vendor risk"
 ```
 
-The CLI prints allowed documents, blocked documents, injection flags, masked PII count, and the audit event path for the run.
+4. Optionally launch the demo UI:
 
-If you prefer a pinned dependency snapshot for non-editable environments, `requirements.txt` is still included.
+```powershell
+python -m streamlit run app.py
+```
 
-## Demo notes
+## Enterprise AI Security Alignment
 
-- No paid API is required.
-- Optional LLM calling is intentionally disabled by default.
-- Retrieval is local and lightweight for easy demo portability.
-- Audit logs are written to `logs/audit_log.csv` after queries run.
-- Streamlit is demo UI only; the core logic lives in the backend pipeline modules.
+- Identity-aware retrieval: access control is enforced at document-selection time, not only after generation.
+- RAG security: retrieved context is treated as untrusted input and screened before prompt assembly.
+- AI governance: the pipeline produces explicit decision artifacts such as deny reasons, masked PII counts, and audit rows.
+- Prompt-injection defense: malicious retrieved instructions are flagged and blocked from the answer path.
+- PII masking: common high-risk patterns are redacted before context is passed forward.
+- Audit logging: every run captures structured evidence useful for review, debugging, and control validation.
+- LLM observability: token estimate, latency estimate, retrieval outcomes, and security events are surfaced as pipeline outputs.
 
-## Current behavior
+## Honest scope
 
-### Works now
+What is real in this repo:
 
-- mock identity and access simulation
-- secure retrieval with allowed vs blocked reasoning
-- prompt injection detection on malicious sample docs
-- PII masking before response context is assembled
-- audit logging and security event surfacing
-- basic evaluation scenarios in the UI
-- CLI execution of the same security engine without Streamlit
+- backend-first secure RAG orchestration
+- typed policy and pipeline modules
+- local retrieval
+- deterministic test coverage
+- CLI and UI access to the same engine
 
-### Mocked
+What is intentionally mocked or simplified:
 
 - identity provider integration
-- production document store and chunking pipeline
-- real LLM response generation
-- enterprise auth, policy engines, and SIEM export
+- production policy engines
+- semantic prompt-injection classification
+- production-grade PII detection coverage
+- external model integration
+- SIEM, retention, and enterprise logging controls
 
-## How this maps to AI Operations & RAG Architect work
+This is a credible engineering demo, not a claim of production completeness.
 
-- Shows how retrieval systems can enforce identity-aware access policy before context reaches a model.
-- Demonstrates practical defense-in-depth for enterprise assistants through access control, prompt-injection screening, PII redaction, and auditability.
-- Mirrors AI operations concerns such as observability, safety checks, deterministic evaluations, and local-first demo environments that are easy to validate.
-- Provides a portfolio-friendly example of secure RAG orchestration without hiding behind paid APIs or overbuilt infrastructure.
+## Review path
+
+For a fast technical review:
+
+1. Read [src/rag_guard_copilot/pipeline.py](/D:/rag-guard-copilot/src/rag_guard_copilot/pipeline.py)
+2. Inspect [src/rag_guard_copilot/policy_engine.py](/D:/rag-guard-copilot/src/rag_guard_copilot/policy_engine.py) and [src/rag_guard_copilot/security.py](/D:/rag-guard-copilot/src/rag_guard_copilot/security.py)
+3. Run the CLI scenario
+4. Check [tests/test_security_pipeline.py](/D:/rag-guard-copilot/tests/test_security_pipeline.py)
+5. Use Streamlit only to inspect decisions visually
 
 ## Next improvements
 
-1. Swap TF-IDF for embeddings with a local sentence-transformer.
-2. Add row-level and attribute-level policy checks.
-3. Add downloadable audit evidence packs and JSON exports.
-4. Connect to a real model behind a feature flag with prompt hardening.
-5. Add automated regression tests for access, injection, and masking rules.
+1. Replace TF-IDF with local embeddings and chunk-level retrieval.
+2. Add row-level and attribute-level policy enforcement.
+3. Expand prompt-injection detection beyond rule patterns.
+4. Add stronger audit controls such as retention policy and tamper-evident export.
+5. Add optional model integration behind a feature flag with hardened prompt construction.

@@ -1,65 +1,90 @@
 # Demo Scenarios
 
-## 1. Normal employee query
+These walkthroughs are designed for recruiter and hiring-manager review. Each one shows a concrete security property of the backend pipeline, not just a UI behavior.
 
-User: `u_it_01`  
-Question: `What changed in the engineering platform update?`
+## 1. Normal employee retrieval
 
-What to show:
+User:
+`u_it_01`
 
-- The assistant retrieves internal platform notes.
-- Public or internal content is allowed because the user has internal access.
-- The answer uses only safe, permitted context.
+Query:
+`What changed in the engineering platform update?`
 
-Why recruiters care:
+What this demonstrates:
 
-- Shows basic identity-aware retrieval without complexity.
-- Demonstrates that normal users still get useful answers after security checks.
+- Internal content can still be retrieved when the user is authorized.
+- The system is not security-only; it still returns useful grounded context.
+- Access control happens without breaking normal assistant behavior.
 
-## 2. Finance user query
+Evidence to point out:
 
-User: `u_fin_01`  
-Question: `What happened in the Q3 finance plan?`
+- Allowed documents include internal platform notes.
+- The answer is built only from permitted context.
+- The audit log records the run without showing document bodies.
 
-What to show:
+## 2. Finance retrieval with masking
 
-- Finance content is retrieved and allowed.
-- Email and phone details inside the finance memo are masked before prompt construction.
-- The audit row captures allowed docs, masked PII count, token estimate, and latency.
+User:
+`finance_analyst`
 
-Why recruiters care:
+Query:
+`What happened in the Q3 finance plan?`
 
-- Proves security controls can coexist with useful business retrieval.
-- Highlights privacy-aware prompt assembly for sensitive enterprise data.
+What this demonstrates:
 
-## 3. Unauthorized HR access attempt
+- Finance documents can be retrieved for the right identity.
+- Sensitive values inside allowed documents are still treated carefully.
+- Useful retrieval and privacy controls can coexist in one pipeline.
 
-User: `u_hr_01`  
-Question: `Show the merger risk memo.`
+Evidence to point out:
 
-What to show:
+- Finance content is allowed.
+- Email and phone data in the finance memo are masked before answer assembly.
+- The pipeline emits masked PII count, token estimate, latency, and audit path.
 
-- Legal content appears as a candidate result but is blocked.
-- The UI explains exactly why access was denied.
-- The audit log records the blocked retrieval attempt.
+## 3. Unauthorized access attempt
 
-Why recruiters care:
+User:
+`u_hr_01`
 
-- Shows least-privilege enforcement during retrieval, not after generation.
-- Makes policy decisions legible for debugging, compliance, and demos.
+Query:
+`Show the merger risk memo.`
 
-## 4. Malicious prompt-injection document
+What this demonstrates:
 
-User: `u_it_01`  
-Question: `Any security runbook updates?`
+- Relevance alone does not grant access.
+- Least-privilege enforcement happens during retrieval, before an LLM sees the content.
+- Deny reasons are explicit enough for review and debugging.
 
-What to show:
+Evidence to point out:
 
-- The malicious runbook is retrieved as relevant content.
-- The system flags patterns like `ignore permissions` and `reveal secrets`.
-- The document is blocked from assistant context even though the user could otherwise access internal docs.
+- The legal memo may rank as relevant but is blocked.
+- The blocked document carries a human-readable deny reason.
+- The audit log captures the blocked retrieval attempt.
 
-Why recruiters care:
+## 4. Prompt-injection in retrieved context
 
-- Demonstrates an important RAG threat model with realistic malicious context.
-- Shows security filtering of retrieved documents before anything is sent to a model.
+User:
+`u_it_01`
+
+Query:
+`Any security runbook updates?`
+
+What this demonstrates:
+
+- Retrieved documents are treated as untrusted input.
+- An authorized user is still prevented from inheriting malicious retrieved instructions.
+- Prompt-injection defense is built into the pipeline rather than delegated entirely to the model.
+
+Evidence to point out:
+
+- The malicious security runbook is retrieved as relevant.
+- Injection phrases such as `ignore permissions` and `reveal secrets` are flagged.
+- The document is blocked from answer context even though the user has internal access.
+
+## How to present this in a review
+
+- Start with the CLI, not the UI, to show the backend-first design.
+- Use the Streamlit app only as a visual inspection layer after the pipeline behavior is clear.
+- Emphasize that the project demonstrates control points in secure RAG orchestration: policy enforcement, unsafe-context filtering, redaction, and auditability.
+- Be direct that this is a strong engineering demo, not a production-complete security platform.
