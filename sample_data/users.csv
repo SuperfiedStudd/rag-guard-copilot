@@ -1,0 +1,6 @@
+user_id,name,department,role,allowed_groups
+u_fin_01,Maya Patel,Finance,Analyst,public|internal|finance
+u_hr_01,Jordan Lee,HR,Specialist,public|internal|hr
+u_legal_01,Avery Chen,Legal,Counsel,public|internal|legal
+u_it_01,Sam Rivera,IT,Manager,public|internal
+u_exec_01,Nina Brooks,Executive,Director,public|internal|finance|hr|legal
