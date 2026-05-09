@@ -26,11 +26,11 @@ def generate_demo_answer(query: str, safe_context: list[str]) -> str:
     )
 
 
-def run_secure_pipeline(query: str, user_ref: str) -> PipelineResult:
+def run_secure_pipeline(query: str, user_ref: str, top_k: int | None = None) -> PipelineResult:
     start = time.perf_counter()
     user = resolve_user(user_ref, load_user_objects())
     documents = load_document_objects()
-    ranked_results = search_documents(query, documents, DEFAULT_TOP_K)
+    ranked_results = search_documents(query, documents, top_k or DEFAULT_TOP_K)
 
     retrieval_decisions: list[RetrievalDecision] = []
     allowed_docs: list[RetrievalDecision] = []
