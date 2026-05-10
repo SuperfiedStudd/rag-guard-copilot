@@ -718,8 +718,14 @@ def load_prompt_into_workspace(user_id: str, query: str, top_k: int | None = Non
     st.session_state["query_text"] = query
     if top_k is not None:
         st.session_state["retrieval_depth"] = top_k
-    st.session_state["page_name"] = "Secure Workspace"
+    st.session_state["pending_page_name"] = "Secure Workspace"
     st.rerun()
+
+
+def reset_workspace_inputs(default_user_id: str) -> None:
+    st.session_state["selected_user_id"] = default_user_id
+    st.session_state["query_text"] = DEFAULT_QUERY
+    st.session_state["retrieval_depth"] = 5
 
 
 def run_regression_suite() -> list[dict[str, object]]:
@@ -970,6 +976,8 @@ def render_founder_demo_page(users_df: pd.DataFrame, audit_view: pd.DataFrame) -
 def render_sidebar(users_df: pd.DataFrame, documents_df: pd.DataFrame) -> str:
     del documents_df
     with st.sidebar:
+        if pending_page_name := st.session_state.pop("pending_page_name", None):
+            st.session_state["page_name"] = pending_page_name
         st.markdown(
             """
             <div class="sidebar-brand">
@@ -1045,6 +1053,8 @@ def render_workspace_page(users_df: pd.DataFrame, documents_df: pd.DataFrame, au
     left, right = st.columns([1.45, 1])
     with left:
         with st.container(border=True):
+            if st.session_state.pop("workspace_reset_requested", False):
+                reset_workspace_inputs(users_df.iloc[0]["user_id"])
             st.markdown("#### Query control center")
             st.markdown(
                 "Compose an internal operations question, adjust retrieval depth, or trigger a curated workflow that highlights blocking, masking, partial retrieval, and prompt-injection defense."
@@ -1089,9 +1099,7 @@ def render_workspace_page(users_df: pd.DataFrame, documents_df: pd.DataFrame, au
                 reset_requested = reset_col.form_submit_button("Reset composer", width="stretch")
 
             if reset_requested:
-                st.session_state["selected_user_id"] = users_df.iloc[0]["user_id"]
-                st.session_state["query_text"] = DEFAULT_QUERY
-                st.session_state["retrieval_depth"] = 5
+                st.session_state["workspace_reset_requested"] = True
                 st.rerun()
 
             if submitted:
