@@ -4,7 +4,10 @@ import re
 
 INJECTION_PATTERNS = [
     r"ignore (all )?(previous|prior) instructions",
+    r"ignore access rules",
+    r"ignore policy",
     r"ignore permissions",
+    r"bypass policy",
     r"reveal secrets",
     r"bypass (security|guardrails|filters)",
     r"system prompt",
@@ -23,6 +26,8 @@ PII_PATTERNS = {
         re.IGNORECASE,
     ),
 }
+
+
 def parse_allowed_groups(raw_value: str) -> set[str]:
     return {item.strip().lower() for item in raw_value.split("|") if item.strip()}
 

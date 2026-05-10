@@ -15,14 +15,22 @@ def estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
-def generate_demo_answer(query: str, safe_context: list[str]) -> str:
+REQUEST_INJECTION_BLOCK_REASON = "Prompt injection detected. Requested data exceeds role permissions."
+
+
+def generate_demo_answer(query: str, safe_context: list[str], blocked_count: int) -> str:
     if not safe_context:
-        return "No safe documents were available for this query, so the assistant withheld an answer."
+        return "No safe autonomous logistics documents were available for this query, so the copilot withheld an answer."
     snippets = "\n".join(f"- {item}" for item in safe_context[:MAX_CONTEXT_CHUNKS])
+    blocked_notice = (
+        f"\n\nAdditional retrieved candidates were withheld by policy or security controls: {blocked_count}."
+        if blocked_count
+        else ""
+    )
     return (
-        f"Demo answer for: '{query}'\n\n"
-        "Grounded context used after access checks, injection filtering, and PII masking:\n"
-        f"{snippets}"
+        f"Secure autonomous logistics answer for: '{query}'\n\n"
+        "Grounded context used after identity checks, prompt-injection filtering, and PII masking:\n"
+        f"{snippets}{blocked_notice}"
     )
 
 
@@ -31,6 +39,7 @@ def run_secure_pipeline(query: str, user_ref: str, top_k: int | None = None) -> 
     user = resolve_user(user_ref, load_user_objects())
     documents = load_document_objects()
     ranked_results = search_documents(query, documents, top_k or DEFAULT_TOP_K)
+    query_injection_flags = detect_prompt_injection(query)
 
     retrieval_decisions: list[RetrievalDecision] = []
     allowed_docs: list[RetrievalDecision] = []
@@ -40,6 +49,16 @@ def run_secure_pipeline(query: str, user_ref: str, top_k: int | None = None) -> 
     blocked_reasons: dict[str, str] = {}
     injection_doc_ids: list[str] = []
     total_pii = 0
+
+    if query_injection_flags:
+        security_events.append(
+            SecurityEvent(
+                type="prompt_injection_flag",
+                doc_id="query",
+                title="User prompt",
+                details=", ".join(query_injection_flags),
+            )
+        )
 
     for ranked_result in ranked_results:
         document = get_document(ranked_result.doc_id, documents)
@@ -68,6 +87,22 @@ def run_secure_pipeline(query: str, user_ref: str, top_k: int | None = None) -> 
                     details=decision.access_reason,
                 )
             )
+            continue
+
+        if query_injection_flags:
+            blocked_docs.append(
+                RetrievalDecision(
+                    doc_id=decision.doc_id,
+                    title=decision.title,
+                    group=decision.group,
+                    sensitivity=decision.sensitivity,
+                    score=decision.score,
+                    access_allowed=False,
+                    access_reason=REQUEST_INJECTION_BLOCK_REASON,
+                    injection_flags=decision.injection_flags,
+                )
+            )
+            blocked_reasons[decision.doc_id] = REQUEST_INJECTION_BLOCK_REASON
             continue
 
         if decision.injection_flags:
@@ -111,7 +146,11 @@ def run_secure_pipeline(query: str, user_ref: str, top_k: int | None = None) -> 
         allowed_docs.append(decision)
         masked_context.append(masked_text)
 
-    answer = generate_demo_answer(query, masked_context)
+    answer = (
+        f"Request blocked. {REQUEST_INJECTION_BLOCK_REASON}"
+        if query_injection_flags
+        else generate_demo_answer(query, masked_context, blocked_count=len(blocked_docs))
+    )
     token_estimate = estimate_tokens(query + "\n".join(masked_context))
     latency_ms = round((time.perf_counter() - start) * 1000, 1)
     audit_event = AuditEvent(

@@ -1,5 +1,6 @@
 .venv/
 .pytest_cache/
+.tmp/
 logs/
 __pycache__/
 src/rag_guard_copilot/__pycache__/

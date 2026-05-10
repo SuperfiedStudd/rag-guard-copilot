@@ -6,8 +6,10 @@ from .pipeline import run_secure_pipeline
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run policy-aware RAG security scenarios from the command line.")
-    parser.add_argument("--user", required=True, help="User ID or handle such as 'u_fin_01' or 'finance_analyst'.")
+    parser = argparse.ArgumentParser(
+        description="Run secure autonomous logistics RAG scenarios from the command line."
+    )
+    parser.add_argument("--user", required=True, help="User ID or handle such as 'u_ops_01' or 'operations_operations_associate'.")
     parser.add_argument("--query", required=True, help="Query to evaluate through the secure RAG pipeline.")
     return parser
 

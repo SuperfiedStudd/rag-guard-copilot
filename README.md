@@ -1,61 +1,75 @@
-# RAG Guard Copilot
+# Secure RAG Copilot for Autonomous Logistics Operations
 
-RAG Guard Copilot proves a specific engineering point: a retrieval system can enforce identity-aware access control, filter prompt-injection content, mask sensitive data, and emit audit evidence before any LLM answer is assembled.
+This repo is a backend-first demo of secure, identity-aware RAG for internal autonomous logistics workflows. It shows how an AI copilot can help teams answer route, dock, safety, customer, maintenance, and governance questions without dropping role-aware retrieval, prompt-injection defense, PII masking, audit logging, or observability.
 
-This repo is backend-first. The core deliverable is a testable secure RAG pipeline under `src/rag_guard_copilot/`. Streamlit is included as a thin demo surface for inspection, not as the product itself.
+In the first 10 seconds, a reviewer can verify the core claim: the system retrieves useful operational context for the right identity, blocks restricted material, masks sensitive values before answer assembly, and records governed evidence for later review.
+
+The app is intentionally company-neutral and uses **synthetic autonomous logistics sample data** only. Any impact framing in the repo is presented as **scenario estimates**, not company claims.
+
+## Screenshots
+
+![90-Second Demo](docs/screenshots/01-90-second-demo.png)
+
+*Founder-friendly walkthrough of the secure RAG story: role-aware access, blocked or masked retrieval, and immediate auditability.*
+
+![Secure Workspace](docs/screenshots/02-secure-workspace.png)
+
+*Backend-first secure workspace showing grounded answer assembly after identity checks, prompt-injection screening, and PII masking.*
+
+![Decision Explorer](docs/screenshots/03-decision-explorer.png)
+
+*Decision-level reasoning across allowed, blocked, and allowed-plus-masked candidates so reviewers can inspect why context stayed on or off the answer path.*
+
+![Audit Trail](docs/screenshots/04-audit-trail.png)
+
+*Governance view with identity, role, query, blocked-request filters, and reviewable audit fields for secure operational AI workflows.*
+
+![Operations Impact Lab](docs/screenshots/05-operations-impact-lab.png)
+
+*Editable scenario assumptions and output metrics for discussing operational value carefully without turning synthetic demo results into company claims.*
 
 ## What this project proves
 
-- retrieval can be policy-aware instead of blindly relevance-first
+- retrieval can be role-aware instead of blindly relevance-first
 - unsafe retrieved context can be blocked before answer construction
 - prompt-injection defense belongs in the retrieval pipeline, not only at the model boundary
+- customer, safety, and maintenance knowledge can be separated by identity
 - PII masking and audit logging can be first-class pipeline steps
 - the same security engine can be exercised through tests, CLI, and UI
 
+## Demo use case
+
+The synthetic knowledge base models:
+
+- repeated middle-mile route operations
+- warehouse-to-retail dock handoffs
+- safety incident review boundaries
+- customer SLA and contract summaries
+- fleet maintenance and sensor-health notes
+- compliance and audit requirements
+- AI assistant policy enforcement
+
+The role model includes:
+
+- Operations Associate
+- Safety Reviewer
+- Fleet Maintenance
+- Customer Success
+- Executive
+- External Vendor
+
+Each identity gets different access behavior through document-group policy.
+
 ## Core capabilities
 
-- Simulates identity metadata with mock users, departments, roles, and allowed document groups
+- Simulates role and department metadata with mock identities and allowed document groups
 - Retrieves candidate documents with local TF-IDF search
 - Applies per-document access decisions before prompt context is built
 - Detects prompt-injection phrases in retrieved content and blocks flagged documents
 - Masks emails, phone numbers, SSNs, salaries, and street addresses before answer assembly
 - Writes audit records with user, query, allowed docs, blocked docs, injection flags, masked PII count, token estimate, and latency
+- Surfaces local observability signals for governed AI runs, including latency, token estimate, blocked request rate, and security-event traces
 - Exposes the pipeline through both a CLI and a Streamlit review UI
-
-## Why this is not just a dashboard
-
-- The main logic lives in typed backend modules, not in the UI layer.
-- The secure flow is executable without Streamlit through `python -m rag_guard_copilot.cli`.
-- Tests validate the backend pipeline directly, including blocked retrieval, injection detection, PII masking, and audit writes.
-- Streamlit is only a reviewer-friendly lens over the same pipeline used by the CLI and tests.
-
-## Architecture
-
-```text
-rag-guard-copilot/
-|-- app.py
-|-- pyproject.toml
-|-- requirements.txt
-|-- README.md
-|-- demo_scenarios.md
-|-- docs/
-|   `-- threat_model.md
-|-- sample_data/
-|   |-- documents.csv
-|   `-- users.csv
-`-- src/
-    `-- rag_guard_copilot/
-        |-- assistant.py
-        |-- audit.py
-        |-- cli.py
-        |-- config.py
-        |-- data_loader.py
-        |-- pipeline.py
-        |-- policy_engine.py
-        |-- retrieval.py
-        |-- schemas.py
-        `-- security.py
-```
 
 ## Run locally
 
@@ -72,29 +86,27 @@ python -m venv .venv
 python -m pip install -e .
 ```
 
-Dependency ownership lives in `pyproject.toml`. The `requirements.txt` file is intentionally minimal and kept as a deployment shim for platforms that expect it.
-
 3. Run the backend pipeline directly:
 
 ```powershell
-python -m rag_guard_copilot.cli --user finance_analyst --query "show finance vendor risk"
+python -m rag_guard_copilot.cli --user u_ops_01 --query "summarize the blocked route escalation steps for the Bentonville morning shuttle"
 ```
 
-4. Optionally launch the demo UI:
+4. Launch the Streamlit app:
 
 ```powershell
 python -m streamlit run app.py
 ```
 
-## Enterprise AI Security Alignment
+## Review path
 
-- Identity-aware retrieval: access control is enforced at document-selection time, not only after generation.
-- RAG security: retrieved context is treated as untrusted input and screened before prompt assembly.
-- AI governance: the pipeline produces explicit decision artifacts such as deny reasons, masked PII counts, and audit rows.
-- Prompt-injection defense: malicious retrieved instructions are flagged and blocked from the answer path.
-- PII masking: common high-risk patterns are redacted before context is passed forward.
-- Audit logging: every run captures structured evidence useful for review, debugging, and control validation.
-- LLM observability: token estimate, latency estimate, retrieval outcomes, and security events are surfaced as pipeline outputs.
+For a fast technical review:
+
+1. Read [src/rag_guard_copilot/pipeline.py](/D:/rag-guard-copilot/src/rag_guard_copilot/pipeline.py)
+2. Inspect [src/rag_guard_copilot/policy_engine.py](/D:/rag-guard-copilot/src/rag_guard_copilot/policy_engine.py) and [src/rag_guard_copilot/security.py](/D:/rag-guard-copilot/src/rag_guard_copilot/security.py)
+3. Run the CLI scenario
+4. Check [tests/test_security_pipeline.py](/D:/rag-guard-copilot/tests/test_security_pipeline.py)
+5. Use Streamlit to inspect allowed retrieval, blocked access, PII masking, audit rows, and scenario-based impact framing
 
 ## Honest scope
 
@@ -115,22 +127,4 @@ What is intentionally mocked or simplified:
 - external model integration
 - SIEM, retention, and enterprise logging controls
 
-This is a credible engineering demo, not a claim of production completeness.
-
-## Review path
-
-For a fast technical review:
-
-1. Read [src/rag_guard_copilot/pipeline.py](/D:/rag-guard-copilot/src/rag_guard_copilot/pipeline.py)
-2. Inspect [src/rag_guard_copilot/policy_engine.py](/D:/rag-guard-copilot/src/rag_guard_copilot/policy_engine.py) and [src/rag_guard_copilot/security.py](/D:/rag-guard-copilot/src/rag_guard_copilot/security.py)
-3. Run the CLI scenario
-4. Check [tests/test_security_pipeline.py](/D:/rag-guard-copilot/tests/test_security_pipeline.py)
-5. Use Streamlit only to inspect decisions visually
-
-## Next improvements
-
-1. Replace TF-IDF with local embeddings and chunk-level retrieval.
-2. Add row-level and attribute-level policy enforcement.
-3. Expand prompt-injection detection beyond rule patterns.
-4. Add stronger audit controls such as retention policy and tamper-evident export.
-5. Add optional model integration behind a feature flag with hardened prompt construction.
+This is a credible engineering demo, not a production claim and not an official internal tool for any real company.

@@ -2,13 +2,13 @@
 
 ## Scope
 
-This demo models a policy-aware RAG security pipeline for enterprise assistants. The main security goal is to prevent unsafe retrieval context from reaching answer construction while preserving useful access for authorized users.
+This demo models a policy-aware RAG security pipeline for internal autonomous logistics assistants. The main security goal is to prevent unsafe route, safety, customer, maintenance, or compliance context from reaching answer construction while preserving useful access for approved roles.
 
 ## Prompt injection
 
 Threat:
 
-- Retrieved documents contain malicious instructions such as `ignore permissions`, `reveal secrets`, or attempts to override system behavior.
+- Retrieved notes contain malicious instructions such as `ignore previous instructions`, `override policy`, or requests to reveal restricted operator or contract details.
 
 Risk:
 
@@ -27,17 +27,17 @@ Remaining gap:
 
 Threat:
 
-- Users attempt to retrieve content outside their allowed department or document group.
+- Users attempt to retrieve content outside their allowed route-operations, safety, customer, maintenance, or compliance bands.
 
 Risk:
 
-- Sensitive information from finance, HR, or legal sources could leak through retrieval before generation controls apply.
+- Sensitive operational knowledge could leak through retrieval before generation controls apply.
 
 Current mitigation:
 
 - Access policy is enforced per retrieved document by the backend policy engine.
 - Denied documents are excluded from context and include human-readable deny reasons.
-- Evaluation scenarios and tests cover blocked retrieval behavior.
+- Evaluation scenarios and tests cover blocked retrieval, partial retrieval, and vendor overaccess behavior.
 
 Remaining gap:
 
@@ -47,11 +47,11 @@ Remaining gap:
 
 Threat:
 
-- Retrieved business documents contain emails, phone numbers, SSNs, salary data, or addresses.
+- Retrieved operational documents contain emails, phone numbers, SSNs, salary data, or addresses.
 
 Risk:
 
-- Sensitive personal or compensation data could be passed into prompts, logs, or model outputs.
+- Sensitive personal or contact data could be passed into prompts, logs, or model outputs.
 
 Current mitigation:
 
@@ -70,7 +70,7 @@ Threat:
 
 Risk:
 
-- Logs could expose usage patterns, blocked-document IDs, or become noisy enough to reduce their security value.
+- Logs could expose usage patterns, blocked-document IDs, or become noisy enough to reduce their governance value.
 
 Current mitigation:
 
@@ -89,7 +89,7 @@ Threat:
 
 Risk:
 
-- Sensitive internal content may be retrieved or shared without access checks, masking, or auditability.
+- Sensitive route, safety, customer, or fleet knowledge may be retrieved or shared without access checks, masking, or auditability.
 
 Current mitigation:
 

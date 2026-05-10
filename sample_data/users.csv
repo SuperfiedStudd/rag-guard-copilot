@@ -1,6 +1,7 @@
 user_id,name,department,role,allowed_groups
-u_fin_01,Maya Patel,Finance,Analyst,public|internal|finance
-u_hr_01,Jordan Lee,HR,Specialist,public|internal|hr
-u_legal_01,Avery Chen,Legal,Counsel,public|internal|legal
-u_it_01,Sam Rivera,IT,Manager,public|internal
-u_exec_01,Nina Brooks,Executive,Director,public|internal|finance|hr|legal
+u_ops_01,Casey Morgan,Operations,Operations Associate,public|operations|governance
+u_safety_01,Riley Chen,Safety,Safety Reviewer,public|operations|safety|governance|compliance
+u_maint_01,Alex Torres,Fleet,Fleet Maintenance,public|operations|maintenance|governance
+u_cx_01,Morgan Patel,Customer Success,Customer Success,public|customer|governance
+u_exec_01,Jordan Brooks,Leadership,Executive,public|summary|governance|compliance
+u_vendor_01,Taylor Reed,Partner Ops,External Vendor,public
