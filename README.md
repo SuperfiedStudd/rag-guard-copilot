@@ -6,6 +6,10 @@ In the first 10 seconds, a reviewer can verify the core claim: the system retrie
 
 The app is intentionally company-neutral and uses **synthetic autonomous logistics sample data** only. Any impact framing in the repo is presented as **scenario estimates**, not company claims.
 
+## Live App
+
+[Open the deployed Streamlit app](https://rag-guard-copilot-eve248a8nyjq9duwk3eqyl.streamlit.app/)
+
 ## Screenshots
 
 ![90-Second Demo](docs/screenshots/01-90-second-demo.png)
